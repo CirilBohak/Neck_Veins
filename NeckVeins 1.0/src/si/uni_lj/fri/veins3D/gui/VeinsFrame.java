@@ -91,7 +91,11 @@ public class VeinsFrame extends Widget {
 	private PopupWindow errorPop;
 	private Label errorPopLabel;
 
-	public VeinsFrame() throws LWJGLException {
+	// Window backref
+	VeinsWindow veinsWindow;
+	
+	public VeinsFrame(VeinsWindow veinsWindow) throws LWJGLException {
+		this.veinsWindow = veinsWindow;
 		getDisplayModes();
 		initGUI();
 		setLanguageSpecific();
@@ -250,8 +254,8 @@ public class VeinsFrame extends Widget {
 	}
 
 	private void setWaitCursor() {
-		VeinsRenderer renderer = (VeinsRenderer) VeinsFrame.this.getGUI().getRenderer();
-		renderer.setCursor((MouseCursor) VeinsWindow.themeManager.getCursor("cursor.wait"));
+		//VeinsRenderer renderer = (VeinsRenderer) VeinsFrame.this.getGUI().getRenderer();
+		//renderer.setCursor((MouseCursor) VeinsWindow.themeManager.getCursor("cursor.wait"));
 	}
 
 	private void openFile(File file) {
@@ -291,8 +295,11 @@ public class VeinsFrame extends Widget {
 	}
 
 	private void openObj(File file) {
-		VeinsRendererInterface renderer = (VeinsRenderer) VeinsFrame.this.getGUI().getRenderer();
-		renderer.loadModelObj(file.getAbsolutePath());
+		//VeinsRendererInterface renderer = (VeinsRendererInterface) VeinsFrame.this.getGUI().getRenderer();
+		//renderer.loadModelObj(file.getAbsolutePath());
+		VeinsModel veinsModel = new VeinsModel();
+		veinsModel.constructVBOFromObjFile(file.getAbsolutePath());
+		veinsWindow.renderers.forEach((VeinsRendererInterface vri)->vri.setVeinsModel(veinsModel));
 	}
 
 	// TODO

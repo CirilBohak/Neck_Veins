@@ -29,6 +29,7 @@ import com.tpxl.GL.ElementBuffer;
 import com.tpxl.GL.FragmentShader;
 import com.tpxl.GL.Framebuffer;
 import com.tpxl.GL.OrthoCamera;
+import com.tpxl.GL.PerspectiveCamera;
 import com.tpxl.GL.Program;
 import com.tpxl.GL.Shader;
 import com.tpxl.GL.Texture;
@@ -57,7 +58,7 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 							  screen;
 	public Transform 	modelTransform,	//Make private + getters/setters
 						screenTransform;
-	public Program programProject,	//Make private, no need for setters/getters
+	public Program 	programProject,	//Make private, no need for setters/getters
 					programTextureProject,
 					programDepth;
 	
@@ -66,9 +67,12 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 	private FloatBuffer floatBuffer;
 	
 	private ArrayBuffer screenVertexBuffer,
-				screenNormalBuffer,
-				screenUVBuffer;
-	private ElementBuffer screenElementBuffer;
+						screenNormalBuffer,
+						screenUVBuffer,
+						modelVertexBuffer,
+						modelNormalBuffer;
+	private ElementBuffer 	screenElementBuffer,
+							modelElementBuffer;
 	
 	private VeinsModel veinsModel;
 	
@@ -89,23 +93,23 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 		dirtyViewCamera = true;
 		showScreen = true;
 		
-		screenTransparency = 0.3f;
+		screenTransparency = 0.5f;
 		
 		screenTransform = new Transform();
 		modelTransform = new Transform();
 		
 		//viewCamera = new PerspectiveCamera();
-		viewCamera = new OrthoCamera(-100, 100, -100, 100, -200, 200);
+		viewCamera = new OrthoCamera(-200, 200, -200, 200, -200, 200);
 		viewCamera.translate(new Vector3f(0, 0, 100));
 		
 		//projectionCamera = new OrthoCamera(-100, 100, -100, 100, -100, 100);
 		//projectionCamera = new PerspectiveCamera(viewCamera);
 		projectionCamera = new OrthoCamera(viewCamera);
-		((OrthoCamera)projectionCamera).setOrtho(-100, 100, -100, 100, -200, 200);
+		((OrthoCamera)projectionCamera).setOrtho(-200, 200, -200, 200, -200, 200);
 		
 		activeCamera = viewCamera;
-		model = new VertexArrayObject();
-		depthBuffer = Framebuffer.getDepthFramebuffer(1024, 768);
+		//model = new VertexArrayObject();
+		depthBuffer = Framebuffer.getDepthFramebuffer(1366, 768);
 
 		
 		projectionTexture = XRayProjectionModule.getTexture(resourceLocation + "imgs//Pat12_2D_DSA_AP.jpg");
@@ -114,8 +118,13 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 		
 		veinsModel = new VeinsModel();
 		veinsModel.constructVBOFromObjFile(resourceLocation + "obj//square.obj");
-		
+		System.out.println("Veins model: " + veinsModel.centerx + " " + veinsModel.centery + " " + veinsModel.centerz);
 		screen = new VertexArrayObject();
+		model = new VertexArrayObject();
+		
+		modelVertexBuffer = new ArrayBuffer(GL15.GL_STATIC_DRAW);
+		modelNormalBuffer = new ArrayBuffer(GL15.GL_STATIC_DRAW);
+		modelElementBuffer = new ElementBuffer(GL15.GL_STATIC_DRAW);
 		
 		screenVertexBuffer = new ArrayBuffer(GL15.GL_STATIC_DRAW);
 		screenNormalBuffer = new ArrayBuffer(GL15.GL_STATIC_DRAW);
@@ -123,24 +132,55 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 		screenElementBuffer = new ElementBuffer(GL15.GL_STATIC_DRAW);
 
 		Mesh m = veinsModel.getMeshes().get(0);
-		m.getVertices();
+		m.getVertices().forEach(System.out::println);
 		FloatBuffer tmpFloatBuffer = Tools.arrayListToBuffer(m.getVertices(), null);
+		System.out.println("pos: " + tmpFloatBuffer.position());
+		for(int i=0; i < tmpFloatBuffer.limit(); i+=3)
+		{
+			System.out.println(tmpFloatBuffer.get(i) + " " + tmpFloatBuffer.get(i+1) + " " + tmpFloatBuffer.get(i+2));
+		}
 		screenVertexBuffer.setData(tmpFloatBuffer);
 		tmpFloatBuffer.clear();
 		tmpFloatBuffer.put(Mesh.getNormals(m.getVertices(), m.getFaces()));
+		tmpFloatBuffer.rewind();
+		System.out.println("pos: " + tmpFloatBuffer.position());
+		for(int i=0; i < tmpFloatBuffer.limit(); i+=3)
+		{
+			System.out.println(tmpFloatBuffer.get(i) + " " + tmpFloatBuffer.get(i+1) + " " + tmpFloatBuffer.get(i+2));
+		}
 		screenNormalBuffer.setData(tmpFloatBuffer);
-		IntBuffer tmpIBuffer = Tools.arrayListToBuffer(m.getFaces(), null);
+		
+		
+		IntBuffer tmpIBuffer = BufferUtils.createIntBuffer(m.getFaces().size());
+		m.getFaces().forEach((Integer i)->{tmpIBuffer.put(i-1);});
+		tmpIBuffer.rewind();
+		
+		System.out.println("pos: " + tmpIBuffer.position());
+		for(int i=0; i < tmpIBuffer.limit(); i+=3)
+		{
+			System.out.println(tmpIBuffer.get(i) + " " + tmpIBuffer.get(i+1) + " " + tmpIBuffer.get(i+2));
+		}
+		
 		screenElementBuffer.setData(tmpIBuffer);
 		
 		screen.bind();
 		screen.setElementBuffer(screenElementBuffer);
 		screen.enableVertexAttrib(screenVertexBuffer, 0, 3, GL11.GL_FLOAT, false, 0, 0);
 		screen.enableVertexAttrib(screenNormalBuffer, 1, 3, GL11.GL_FLOAT, false, 0, 0);
-		screen.unbind();
-		
 		screen.setCount(m.getFaces().size());
 		screen.setType(GL11.GL_UNSIGNED_INT);
 		screen.unbind();
+		screenElementBuffer.unbind();
+		screenNormalBuffer.unbind();
+		
+		model.bind();
+		model.setElementBuffer(modelElementBuffer);
+		model.enableVertexAttrib(modelVertexBuffer, 0, 3, GL11.GL_FLOAT, false, 0, 0);
+		model.enableVertexAttrib(modelNormalBuffer, 1, 3, GL11.GL_FLOAT, false, 0, 0);
+		model.setCount(0);
+		model.setType(GL11.GL_UNSIGNED_INT);
+		model.unbind();
+		
 		programDepth = loadShader(resourceLocation + "shaders//depth");
 		
 		programProject = loadShader(resourceLocation + "shaders//projection");
@@ -220,12 +260,14 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 	
 	public void tick()
 	{
+		GL11.glEnable(GL11.GL_BLEND);
+		GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+		dirtyProjectionCamera = true;
 		if(dirtyProjectionCamera)
 		{
 			depthBuffer.bind();
 			GL11.glClear(GL11.GL_DEPTH_BUFFER_BIT);
 			GL20.glUseProgram(programDepth.getProgramID());
-			
 			programDepth.setUniformMatrix4f("M", false, modelTransform.viewToFloatBuffer(floatBuffer));
 			programDepth.setUniformMatrix4f("V", false, projectionCamera.viewToFloatBuffer(floatBuffer));
 			programDepth.setUniformMatrix4f("P", false, projectionCamera.projectionToFloatBuffer(floatBuffer));
@@ -238,7 +280,6 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 			GL11.glCullFace(GL11.GL_BACK);
 			GL11.glDisable(GL11.GL_CULL_FACE);
 			GL20.glUseProgram(0);
-			
 			depthBuffer.unbind();
 			dirtyProjectionCamera = false;
 			dirtyViewCamera = true; //need to refresh the screen because shadows change
@@ -246,20 +287,22 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 		if(dirtyViewCamera)
 		{
 			dirtyViewCamera = false;
-			
 			GL11.glClear(GL11.GL_DEPTH_BUFFER_BIT | GL11.GL_COLOR_BUFFER_BIT);
+			
 			GL20.glUseProgram(programProject.getProgramID());
+			
 			GL13.glActiveTexture(GL13.GL_TEXTURE0);
 			GL11.glBindTexture(GL11.GL_TEXTURE_2D, depthBuffer.getTextureID());
 			GL13.glActiveTexture(GL13.GL_TEXTURE1);
 			GL11.glBindTexture(GL11.GL_TEXTURE_2D, projectionTexture.getTextureID());
-
+			GL13.glActiveTexture(GL13.GL_TEXTURE0);
+			
 			programProject.setUniformMatrix4f("V_camera", false, activeCamera.viewToFloatBuffer(floatBuffer));
 			programProject.setUniformMatrix4f("P_camera", false, activeCamera.projectionToFloatBuffer(floatBuffer));
 			programProject.setUniformMatrix4f("V_projector", false, projectionCamera.viewToFloatBuffer(floatBuffer));
 			programProject.setUniformMatrix4f("P_projector", false, projectionCamera.projectionToFloatBuffer(floatBuffer));
 			programProject.setUniformMatrix4f("M", false, modelTransform.viewToFloatBuffer(floatBuffer));
-			
+
 			model.bind();
 			if(showWireframe)
 			{
@@ -341,14 +384,15 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 
 	@Override
 	public void setupView() {
-		// TODO Auto-generated method stub
-		
+		GL11.glEnable(GL11.GL_DEPTH_TEST);
+		GL11.glClearColor(0.5f, 0.5f, 0.5f, 1);
+		GL11.glEnable(GL11.GL_BLEND);
+		GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
 	}
 
 	@Override
 	public void resetView() {
 		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
@@ -357,11 +401,36 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 	}
 
 	@Override
-	public void loadModelObj(String absolutePath) {
-		if(veinsModel == null)
-			veinsModel = new VeinsModel();
-		else
-			veinsModel.deleteMeshes();
-		veinsModel.constructVBOFromObjFile(absolutePath);
+	public void setVeinsModel(VeinsModel veinsModel) {
+		dirtyProjectionCamera = true;
+		dirtyViewCamera = true;
+		
+		Mesh m = veinsModel.getMeshes().get(0);
+		FloatBuffer tmpFloatBuffer = Tools.arrayListToBuffer(m.getVertices(), null);
+		modelVertexBuffer.setData(tmpFloatBuffer);
+		tmpFloatBuffer.clear();
+		tmpFloatBuffer.put(Mesh.getNormals(m.getVertices(), m.getFaces()));
+		tmpFloatBuffer.rewind();
+		modelNormalBuffer.setData(tmpFloatBuffer);
+		IntBuffer tmpIBuffer = BufferUtils.createIntBuffer(m.getFaces().size());
+		m.getFaces().forEach((Integer i)->{tmpIBuffer.put(i-1);});
+		tmpIBuffer.rewind();
+		
+		modelElementBuffer.setData(tmpIBuffer);
+		modelElementBuffer.unbind();
+		modelNormalBuffer.unbind();
+		System.out.println();
+		model.bind();
+		model.setElementBuffer(modelElementBuffer);
+		model.enableVertexAttrib(modelVertexBuffer, 0, 3, GL11.GL_FLOAT, false, 0, 0);
+		model.enableVertexAttrib(modelNormalBuffer, 1, 3, GL11.GL_FLOAT, false, 0, 0);
+		model.unbind();
+		model.setCount(m.getFaces().size());
+		model.setType(GL11.GL_UNSIGNED_INT);
+
+		modelTransform.translate(new Vector3f((float)-veinsModel.centerx, (float)-veinsModel.centery, (float)-veinsModel.centerz));
+		Utility.printGLError();
+		System.out.println("Model has " + m.getFaces().size() + " faces");
+		
 	}
 }

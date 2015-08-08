@@ -2,6 +2,7 @@ package si.uni_lj.fri.veins3D.gui;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Locale;
 
@@ -47,7 +48,8 @@ public class VeinsWindow extends Container {
 	public static NeckVeinsSettings settings;
 
 	private VeinsFrame frame;
-	private VeinsRendererInterface currentRenderer, defaultRenderer, xrayRenderer;
+	private VeinsRendererInterface currentRenderer;
+	public ArrayList<VeinsRendererInterface> renderers;
 	private HUD hud;
 	private boolean isRunning;
 	private String title;
@@ -167,10 +169,11 @@ public class VeinsWindow extends Container {
 	private void initWindowElements() {
 		try {
 			hud = new HUD();
-			xrayRenderer = new XRayProjectionModule();
-			defaultRenderer = new VeinsRenderer();
-			currentRenderer = defaultRenderer;
-			frame = new VeinsFrame();
+			renderers = new ArrayList<VeinsRendererInterface>();
+			renderers.add(new VeinsRenderer());
+			renderers.add(new XRayProjectionModule());
+			currentRenderer = renderers.get(1);
+			frame = new VeinsFrame(this);
 			gui = new GUI(frame, currentRenderer);
 			add(gui);
 			setTheme("mainframe");

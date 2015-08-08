@@ -270,14 +270,14 @@ public class VeinsRenderer extends VeinsRendererInterface{
 	 * 
 	 * @param fileName
 	 * @throws LWJGLException
-	 */
+	 *//*
 	public void loadModelObj(String fileName) {
 		if (veinsModel != null)
 			veinsModel.deleteMeshes();
 		veinsModel = new VeinsModel();
 		veinsModel.constructVBOFromObjFile(fileName);
 		setDefaultViewOptions();
-	}
+	}*/
 
 	/**
 	 * Loads Mhd with raw file using OpenCL
@@ -554,6 +554,14 @@ public class VeinsRenderer extends VeinsRendererInterface{
 	@Override
 	public void cleanup() {
 		cleanShaders();
+	}
+
+	@Override
+	public void setVeinsModel(VeinsModel veinsModel) {
+		if(this.veinsModel != null)
+			this.veinsModel.deleteMeshes();
+		this.veinsModel = veinsModel;
+		setDefaultViewOptions();
 	}
 
 

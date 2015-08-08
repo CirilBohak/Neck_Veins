@@ -5,7 +5,6 @@ import java.lang.Math;
 import java.util.LinkedList;
 
 import si.uni_lj.fri.veins3D.gui.settings.NeckVeinsSettings;
-import sun.security.provider.certpath.OCSP.RevocationStatus;
 
 import com.leapmotion.leap.*;
 import com.leapmotion.leap.Gesture.State;

@@ -5,6 +5,7 @@ import org.lwjgl.LWJGLException;
 
 import si.uni_lj.fri.veins3D.gui.HUD;
 import si.uni_lj.fri.veins3D.gui.VeinsWindow;
+import si.uni_lj.fri.veins3D.gui.render.models.VeinsModel;
 import de.matthiasmann.twl.renderer.lwjgl.LWJGLRenderer;
 
 public abstract class VeinsRendererInterface extends LWJGLRenderer{
@@ -19,5 +20,5 @@ public abstract class VeinsRendererInterface extends LWJGLRenderer{
 	public abstract void resetView();
 	public abstract void loadShaders() throws IOException;
 	public abstract void cleanup();
-	public abstract void loadModelObj(String absolutePath);
+	public abstract void setVeinsModel(VeinsModel veinsModel);
 }
