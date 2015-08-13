@@ -172,7 +172,7 @@ public class VeinsWindow extends Container {
 			renderers = new ArrayList<VeinsRendererInterface>();
 			renderers.add(new VeinsRenderer());
 			renderers.add(new XRayProjectionModule());
-			currentRenderer = renderers.get(1);
+			currentRenderer = renderers.get(0);
 			frame = new VeinsFrame(this);
 			gui = new GUI(frame, currentRenderer);
 			add(gui);
@@ -187,6 +187,8 @@ public class VeinsWindow extends Container {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (GLShaderCompileException e) {
+			System.out.println(e.getMessage());
+			System.out.println(e.getInfoLog());
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (GLProgramLinkException e) {

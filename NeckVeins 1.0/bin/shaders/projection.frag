@@ -24,6 +24,7 @@ void main()
 		{
 			float d = texture(depthmap, local.xyz);
 			float intensity = clamp(dot(lightDirection, normal_projectorspace), 0, 1);
+			//float intensity = 1;
 			color.xyz = max(d*intensity, 0.1) * texture(projectionTexture, local.xy).xyz;
 		}
 	gl_FragColor = color;

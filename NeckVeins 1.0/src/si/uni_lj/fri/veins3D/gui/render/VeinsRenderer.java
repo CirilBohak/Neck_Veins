@@ -48,6 +48,7 @@ import static org.lwjgl.opengl.GL20.glValidateProgram;
 import static si.uni_lj.fri.veins3D.utils.Tools.allocFloats;
 
 import java.io.BufferedReader;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
@@ -57,10 +58,16 @@ import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.util.glu.GLU;
+import org.lwjgl.util.vector.Vector3f;
+
+import com.tpxl.GL.exception.GLFramebufferException;
+import com.tpxl.GL.exception.GLProgramLinkException;
+import com.tpxl.GL.exception.GLShaderCompileException;
 
 import si.uni_lj.fri.veins3D.exceptions.ShaderLoadException;
 import si.uni_lj.fri.veins3D.gui.HUD;
 import si.uni_lj.fri.veins3D.gui.VeinsWindow;
+import si.uni_lj.fri.veins3D.gui.XRayProjectionModule;
 import si.uni_lj.fri.veins3D.gui.render.models.VeinsModel;
 import si.uni_lj.fri.veins3D.math.Quaternion;
 
@@ -74,6 +81,7 @@ public class VeinsRenderer extends VeinsRendererInterface{
 	public static final int SHADER_6 = 5;
 	public static final int SHADER_7 = 6;
 	public static final int SHADER_8 = 7;
+	public static final int SHADER_9 = 8;
 	public static final int NUMBER_OF_SHADER_PROGRAMS = 8;
 	public static final float FOV_Y = 45;
 	public static final float Z_NEAR = 10;
@@ -87,6 +95,8 @@ public class VeinsRenderer extends VeinsRendererInterface{
 
 	private VeinsModel veinsModel;
 
+	private XRayProjectionModule xRayProjectionModule;
+	
 	public double[] screenPlaneInitialUpperLeft = new double[3];
 	public double[] screenPlaneInitialUpperRight = new double[3];
 	public double[] screenPlaneInitialLowerLeft = new double[3];
@@ -102,6 +112,24 @@ public class VeinsRenderer extends VeinsRendererInterface{
 		activeShaderProgram = 4;
 		isWireframeOn = false;
 		isAAEnabled = false;
+		try {
+			xRayProjectionModule = new XRayProjectionModule();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (GLShaderCompileException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (GLProgramLinkException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (GLFramebufferException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	/**
@@ -154,28 +182,32 @@ public class VeinsRenderer extends VeinsRendererInterface{
 
 	private void renderVeins() {
 		if (veinsModel != null) {
-			glMatrixMode(GL_MODELVIEW);
-			glPushMatrix();
-
-			if (activeShaderProgram == -1) {
+			
+			if(activeShaderProgram >= -1 && activeShaderProgram <= 7)
+			{
+				if (activeShaderProgram == -1) {
+					GL20.glUseProgram(0);
+				} else {
+					GL20.glUseProgram(shaderPrograms[activeShaderProgram]);
+					int myUniformLocation = glGetUniformLocation(shaderPrograms[activeShaderProgram], "bloodColor");
+					glUniform4f(myUniformLocation, 0.8f, 0.06667f, 0.0f, 1);
+				}
+	
+				glEnable(GL_LIGHTING);
+				glColor4f(0.8f, 0.06667f, 0.0f, 1);
+				glMaterial(GL_FRONT, GL_AMBIENT, allocFloats(new float[] { 0.8f, 0.06667f, 0.0f, 1 }));
+				glMaterial(GL_FRONT, GL_DIFFUSE, allocFloats(new float[] { 0.8f, 0.06667f, 0.0f, 1 }));
+				glMaterial(GL_FRONT, GL_SPECULAR, allocFloats(new float[] { 0.66f, 0.66f, 0.66f, 1f }));
+				glMaterial(GL_FRONT, GL_SHININESS, allocFloats(new float[] { 100f, 256.0f, 256.0f, 256.0f }));
+	
+				veinsModel.render();
+	
 				GL20.glUseProgram(0);
-			} else {
-				GL20.glUseProgram(shaderPrograms[activeShaderProgram]);
-				int myUniformLocation = glGetUniformLocation(shaderPrograms[activeShaderProgram], "bloodColor");
-				glUniform4f(myUniformLocation, 0.8f, 0.06667f, 0.0f, 1);
+				glPopMatrix();
+			}else if(activeShaderProgram == 8)
+			{
+				xRayProjectionModule.render();
 			}
-
-			glEnable(GL_LIGHTING);
-			glColor4f(0.8f, 0.06667f, 0.0f, 1);
-			glMaterial(GL_FRONT, GL_AMBIENT, allocFloats(new float[] { 0.8f, 0.06667f, 0.0f, 1 }));
-			glMaterial(GL_FRONT, GL_DIFFUSE, allocFloats(new float[] { 0.8f, 0.06667f, 0.0f, 1 }));
-			glMaterial(GL_FRONT, GL_SPECULAR, allocFloats(new float[] { 0.66f, 0.66f, 0.66f, 1f }));
-			glMaterial(GL_FRONT, GL_SHININESS, allocFloats(new float[] { 100f, 256.0f, 256.0f, 256.0f }));
-
-			veinsModel.render();
-
-			GL20.glUseProgram(0);
-			glPopMatrix();
 		}
 	}
 
@@ -410,6 +442,7 @@ public class VeinsRenderer extends VeinsRendererInterface{
 
 	@Override
 	public void handleKeyboardInputPresses() {
+		xRayProjectionModule.handleKeyboardInputPresses();
 		if (Keyboard.getEventKeyState()) {
 			if (Keyboard.getEventKey() == Keyboard.KEY_1) {
 				setActiveShaderProgram(VeinsRenderer.SIMPLE_SHADER);
@@ -437,50 +470,90 @@ public class VeinsRenderer extends VeinsRendererInterface{
 				getVeinsModel().decreaseSubdivisionDepth();
 			} else if (Keyboard.getEventKey() == Keyboard.KEY_9) {
 				switchAA();
+			} else if (Keyboard.getEventKey() == Keyboard.KEY_P){
+				setActiveShaderProgram(VeinsRenderer.SHADER_9);
 			}
 		}
 	}
 
 	@Override
 	public void handleKeyboardInputContinuous() {
+		xRayProjectionModule.handleKeyboardInputContinuous();
+		Vector3f offset = new Vector3f();
+		Vector3f eulerAngles = new Vector3f();
 		if (Keyboard.isKeyDown(Keyboard.KEY_W)) {
 			getCamera().lookUp();
+			Vector3f.add(eulerAngles, new Vector3f(0.05f, 0, 0), eulerAngles);
 		}
 		if (Keyboard.isKeyDown(Keyboard.KEY_S)) {
 			getCamera().lookDown();
+			Vector3f.add(eulerAngles, new Vector3f(-0.05f, 0, 0), eulerAngles);
 		}
 		if (Keyboard.isKeyDown(Keyboard.KEY_A)) {
 			getCamera().lookRight();
+			Vector3f.add(eulerAngles, new Vector3f(0, 0.05f, 0), eulerAngles);
 		}
 		if (Keyboard.isKeyDown(Keyboard.KEY_D)) {
 			getCamera().lookLeft();
+			Vector3f.add(eulerAngles, new Vector3f(0, -0.05f, 0), eulerAngles);
 		}
 		if (Keyboard.isKeyDown(Keyboard.KEY_Q)) {
 			getCamera().rotateCounterClockwise();
+			Vector3f.add(eulerAngles, new Vector3f(0, 0, 0.05f), eulerAngles);
 		}
 		if (Keyboard.isKeyDown(Keyboard.KEY_E)) {
 			getCamera().rotateClockwise();
+			Vector3f.add(eulerAngles, new Vector3f(0, 0, -0.05f), eulerAngles);
 		}
 		if (Keyboard.isKeyDown(Keyboard.KEY_UP)) {
 			getCamera().moveForward();
+			Vector3f.add(offset, new Vector3f(0, 0, -0.1f), offset);
 		}
 		if (Keyboard.isKeyDown(Keyboard.KEY_DOWN)) {
 			getCamera().moveBackwards();
+			Vector3f.add(offset, new Vector3f(0, 0, 0.1f), offset);
 		}
 		if (Keyboard.isKeyDown(Keyboard.KEY_RIGHT)) {
 			getCamera().moveRight();
+			Vector3f.add(offset, new Vector3f(0.1f, 0, 0), offset);
 		}
 		if (Keyboard.isKeyDown(Keyboard.KEY_LEFT)) {
 			getCamera().moveLeft();
+			Vector3f.add(offset, new Vector3f(-0.1f, 0, 0), offset);
 		}
 		if (Keyboard.isKeyDown(Keyboard.KEY_R)) {
 			getCamera().moveUp();
+			Vector3f.add(offset, new Vector3f(0, 0.1f, 0), offset);
 		}
 		if (Keyboard.isKeyDown(Keyboard.KEY_F)) {
 			getCamera().moveDown();
+			Vector3f.add(offset, new Vector3f(0, -0.1f, 0), offset);
 		}
 		if (Keyboard.isKeyDown(Keyboard.KEY_BACK)) {
 			resetScene();
+		}
+
+		if(offset.length() > 0.f || eulerAngles.length() > 0.f){
+			offset.scale(20);
+			if(!xRayProjectionModule.lockProjection){
+				//modelTransform.translate(offset);
+				//modelTransform.rotateLocal(eulerAngles);
+				xRayProjectionModule.translateProjectionCamera(offset);
+				xRayProjectionModule.rotateProjectionCamera(eulerAngles);
+				//translateViewCamera(offset);
+				//rotateViewCamera(eulerAngles);
+				xRayProjectionModule.screenTransform.rotate(eulerAngles);
+			}else{
+				xRayProjectionModule.translateViewCamera(offset);
+				xRayProjectionModule.rotateViewCamera(eulerAngles);
+				
+				//modelTransform.translate(offset);
+				//modelTransform.rotateLocal(eulerAngles);
+				//screenTransform.translate(offset);
+				//screenTransform.rotateLocal(eulerAngles);
+				//projectionCamera.translate(offset);
+				//projectionCamera.rotate(eulerAngles);
+			}
 		}
 	}
 	
@@ -488,6 +561,7 @@ public class VeinsRenderer extends VeinsRendererInterface{
 	public void handleMouseInput(int dx, int dy, int dz, HUD hud, VeinsWindow veinsWindow) {
 		if(getVeinsModel() == null)
 			return;
+		xRayProjectionModule.handleMouseInput(dx, dy, dz, hud, veinsWindow);
 		if (dz > 0) {
 			getCamera().zoomIn();
 		} else if (dz < 0) {
@@ -561,6 +635,7 @@ public class VeinsRenderer extends VeinsRendererInterface{
 		if(this.veinsModel != null)
 			this.veinsModel.deleteMeshes();
 		this.veinsModel = veinsModel;
+		xRayProjectionModule.setVeinsModel(veinsModel);
 		setDefaultViewOptions();
 	}
 
