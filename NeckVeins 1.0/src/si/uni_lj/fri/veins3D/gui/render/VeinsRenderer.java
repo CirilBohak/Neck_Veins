@@ -70,6 +70,8 @@ import si.uni_lj.fri.veins3D.gui.VeinsWindow;
 import si.uni_lj.fri.veins3D.gui.XRayProjectionModule;
 import si.uni_lj.fri.veins3D.gui.render.models.VeinsModel;
 import si.uni_lj.fri.veins3D.math.Quaternion;
+import si.uni_lj.fri.veins3D.math.Vector;
+import si.uni_lj.fri.veins3D.utils.RayUtil;
 
 public class VeinsRenderer extends VeinsRendererInterface{
 	public static final int FIXED_PIPELINE = -1;
@@ -483,27 +485,27 @@ public class VeinsRenderer extends VeinsRendererInterface{
 		Vector3f eulerAngles = new Vector3f();
 		if (Keyboard.isKeyDown(Keyboard.KEY_W)) {
 			getCamera().lookUp();
-			Vector3f.add(eulerAngles, new Vector3f(0.05f, 0, 0), eulerAngles);
+			Vector3f.add(eulerAngles, new Vector3f(-0.05f, 0, 0), eulerAngles);
 		}
 		if (Keyboard.isKeyDown(Keyboard.KEY_S)) {
 			getCamera().lookDown();
-			Vector3f.add(eulerAngles, new Vector3f(-0.05f, 0, 0), eulerAngles);
+			Vector3f.add(eulerAngles, new Vector3f(0.05f, 0, 0), eulerAngles);
 		}
 		if (Keyboard.isKeyDown(Keyboard.KEY_A)) {
 			getCamera().lookRight();
-			Vector3f.add(eulerAngles, new Vector3f(0, 0.05f, 0), eulerAngles);
+			Vector3f.add(eulerAngles, new Vector3f(0, -0.05f, 0), eulerAngles);
 		}
 		if (Keyboard.isKeyDown(Keyboard.KEY_D)) {
 			getCamera().lookLeft();
-			Vector3f.add(eulerAngles, new Vector3f(0, -0.05f, 0), eulerAngles);
+			Vector3f.add(eulerAngles, new Vector3f(0, 0.05f, 0), eulerAngles);
 		}
 		if (Keyboard.isKeyDown(Keyboard.KEY_Q)) {
 			getCamera().rotateCounterClockwise();
-			Vector3f.add(eulerAngles, new Vector3f(0, 0, 0.05f), eulerAngles);
+			Vector3f.add(eulerAngles, new Vector3f(0, 0, -0.05f), eulerAngles);
 		}
 		if (Keyboard.isKeyDown(Keyboard.KEY_E)) {
 			getCamera().rotateClockwise();
-			Vector3f.add(eulerAngles, new Vector3f(0, 0, -0.05f), eulerAngles);
+			Vector3f.add(eulerAngles, new Vector3f(0, 0, 0.05f), eulerAngles);
 		}
 		if (Keyboard.isKeyDown(Keyboard.KEY_UP)) {
 			getCamera().moveForward();
@@ -531,10 +533,12 @@ public class VeinsRenderer extends VeinsRendererInterface{
 		}
 		if (Keyboard.isKeyDown(Keyboard.KEY_BACK)) {
 			resetScene();
+			xRayProjectionModule.resetScene();
 		}
 
 		if(offset.length() > 0.f || eulerAngles.length() > 0.f){
-			offset.scale(20);
+			offset.scale(10);
+			eulerAngles.scale((float) (20 * Camera.CAMERA_ROTATION_SPEED));
 			if(!xRayProjectionModule.lockProjection){
 				//modelTransform.translate(offset);
 				//modelTransform.rotateLocal(eulerAngles);
@@ -557,6 +561,8 @@ public class VeinsRenderer extends VeinsRendererInterface{
 		}
 	}
 	
+	double lastHeldAt[];
+	
 	@Override
 	public void handleMouseInput(int dx, int dy, int dz, HUD hud, VeinsWindow veinsWindow) {
 		if(getVeinsModel() == null)
@@ -570,6 +576,26 @@ public class VeinsRenderer extends VeinsRendererInterface{
 		
 		if (veinsWindow.getClickedOn() == VeinsWindow.CLICKED_ON_VEINS_MODEL) {
 			getVeinsModel().changeAddedOrientation(this);
+			
+			/*xRayProjectionModule vvvv*/
+			double[] veinsHeldAt = RayUtil.getRaySphereIntersection(Mouse.getX(), Mouse.getY(), this);
+			if (veinsHeldAt != null) {
+				double[] rotationAxis;
+				if(lastHeldAt != null){
+					rotationAxis = Vector.crossProduct(lastHeldAt, veinsHeldAt);
+					lastHeldAt = veinsHeldAt;
+				}else{
+					rotationAxis = Vector.crossProduct(getVeinsModel().veinsGrabbedAt, veinsHeldAt);
+					lastHeldAt = getVeinsModel().veinsGrabbedAt;
+				}
+				if (Vector.length(rotationAxis) > 0) {
+					Vector3f rotation = new Vector3f((float)rotationAxis[0], (float)rotationAxis[1], (float)rotationAxis[2]);
+					rotation = (Vector3f)rotation.scale(0.00015f);
+					xRayProjectionModule.rotateViewCamera(rotation);
+				}
+			}
+		}else{
+			lastHeldAt = null;
 		}
 
 		if (Mouse.isButtonDown(0)) {
@@ -590,19 +616,23 @@ public class VeinsRenderer extends VeinsRendererInterface{
 
 				if (veinsWindow.getClickedOn() == VeinsWindow.CLICKED_ON_ROTATION_CIRCLE) {
 					getCamera().rotate(upRotation, rightRotation);
+					xRayProjectionModule.rotateViewCamera(new Vector3f((float) (-upRotation/180*Math.PI), 0, 0));
+					xRayProjectionModule.rotateViewCamera(new Vector3f(0, (float) (rightRotation/180*Math.PI), 0));
 				} else {
 					getCamera().move(upRotation, rightRotation);
+					xRayProjectionModule.translateViewCamera(new Vector3f(rightRotation, 0, upRotation));
 				}
-
 			}
 
 			if (veinsWindow.getClickedOn() == VeinsWindow.CLICKED_ON_ROTATION_ELLIPSE) {
 				if (hud.x1 - Mouse.getX() <= 0) {
 					hud.ellipseSide = 0;
 					getCamera().rotateClockwise();
+					xRayProjectionModule.rotateViewCamera(new Vector3f(0, 0, (float) Camera.CAMERA_ROTATION_SPEED));
 				} else {
 					hud.ellipseSide = 1;
 					getCamera().rotateCounterClockwise();
+					xRayProjectionModule.rotateViewCamera(new Vector3f(0, 0, (float) -Camera.CAMERA_ROTATION_SPEED));
 				}
 			}
 
@@ -610,9 +640,11 @@ public class VeinsRenderer extends VeinsRendererInterface{
 				if (hud.x2 - Mouse.getX() <= 0) {
 					hud.ellipseSide = 0;
 					getCamera().moveDown();
+					xRayProjectionModule.translateViewCamera(new Vector3f(0, -Camera.CAMERA_MOVE_SPEED, 0));
 				} else {
 					hud.ellipseSide = 1;
 					getCamera().moveUp();
+					xRayProjectionModule.translateViewCamera(new Vector3f(0, Camera.CAMERA_MOVE_SPEED, 0));
 				}
 			}
 

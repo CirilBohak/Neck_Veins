@@ -266,11 +266,6 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 	
 	public void tick()
 	{
-		GL11.glMatrixMode(GL11.GL_PROJECTION);
-		GL11.glLoadIdentity();
-		GL11.glMatrixMode(GL11.GL_MODELVIEW);
-		GL11.glLoadIdentity();
-		
 		GL11.glEnable(GL11.GL_DEPTH_TEST);
 		GL11.glEnable(GL11.GL_BLEND);
 		GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
@@ -423,12 +418,23 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 	public void loadShaders() throws IOException {
 		
 	}
+	
+	public void resetScene(){
+		modelTransform.setPosition(new Vector3f((float)-veinsModel.centerx, (float)-veinsModel.centery, (float)-veinsModel.centerz));
+		modelTransform.setRotation(new org.lwjgl.util.vector.Quaternion());
+		viewCamera.setRotation(Transform.quatFromEuler(new Vector3f((float)Math.PI/2.f, 0, (float)Math.PI)));
+		viewCamera.setPosition(new Vector3f(0, 0, 100));
+		screenTransform.setRotation(Transform.quatFromEuler(new Vector3f((float)Math.PI/2.f, 0, 0)));
+		screenTransform.setPosition(new Vector3f(0, 0, 0));
+		projectionCamera.setRotation(Transform.quatFromEuler(new Vector3f((float)Math.PI/2.f, 0, 0)));
+		projectionCamera.setPosition(new Vector3f(0, 0, 0));
+	}
 
 	@Override
 	public void setVeinsModel(VeinsModel veinsModel) {
 		dirtyProjectionCamera = true;
 		dirtyViewCamera = true;
-		
+		this.veinsModel = veinsModel;
 		Mesh m = veinsModel.getMeshes().get(0);
 		FloatBuffer tmpFloatBuffer = Tools.arrayListToBuffer(m.getVertices(), null);
 		modelVertexBuffer.setData(tmpFloatBuffer);
@@ -453,12 +459,14 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 		model.setType(GL11.GL_UNSIGNED_INT);
 
 		modelTransform.setPosition(new Vector3f((float)-veinsModel.centerx, (float)-veinsModel.centery, (float)-veinsModel.centerz));
+		
 		//projectionCamera.translate(projectionCamera.getPosition().negate(null));
 		//projectionCamera.translate(new Vector3f((float)veinsModel.centerx, (float)veinsModel.centery, (float)veinsModel.centerz));
 		//modelTransform.rotate(new Vector3f((float)Math.PI/2f, 0, 0));
 		
-		viewCamera.setRotation(new org.lwjgl.util.vector.Quaternion());
-		projectionCamera.setRotation(new org.lwjgl.util.vector.Quaternion());
+		viewCamera.setRotation(Transform.quatFromEuler(new Vector3f((float)Math.PI/2.f, 0, (float)Math.PI)));
+		screenTransform.setRotation(Transform.quatFromEuler(new Vector3f((float)Math.PI/2.f, 0, 0)));
+		projectionCamera.setRotation(Transform.quatFromEuler(new Vector3f((float)Math.PI/2.f, 0, 0)));
 		//rotateViewCamera(Transform.eulerFromQuat(viewCamera.getRotation()));
 		//rotateViewCamera(new Vector3f((float)-Math.PI/2f, 0, 0));
 		//rotateProjectionCamera(Transform.eulerFromQuat(projectionCamera.getRotation()));
