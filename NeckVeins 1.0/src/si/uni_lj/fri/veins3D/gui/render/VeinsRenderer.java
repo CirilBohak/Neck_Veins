@@ -585,12 +585,20 @@ public class VeinsRenderer extends VeinsRendererInterface{
 			xRayProjectionModule.viewCamera.scale(0.8f);
 		}
 
-		System.out.println("Scales: " + xRayProjectionModule.projectionCamera.getScale() + " " + xRayProjectionModule.viewCamera.getScale());
-		
 		if (veinsWindow.getClickedOn() == VeinsWindow.CLICKED_ON_VEINS_MODEL) {
 			getVeinsModel().changeAddedOrientation(this);
+		}
+		
+		if(Mouse.isButtonDown(0) && 
+				veinsWindow.getClickedOn() != VeinsWindow.CLICKED_ON_BUTTONS && 
+				veinsWindow.getClickedOn() != VeinsWindow.CLICKED_ON_MOVE_CIRCLE &&
+				veinsWindow.getClickedOn() != VeinsWindow.CLICKED_ON_MOVE_ELLIPSE &&
+				veinsWindow.getClickedOn() != VeinsWindow.CLICKED_ON_ROTATION_CIRCLE &&
+				veinsWindow.getClickedOn() != VeinsWindow.CLICKED_ON_ROTATION_ELLIPSE){
 			/*xRayProjectionModule vvvv*/
-			double[] veinsHeldAt = RayUtil.getRaySphereIntersection(Mouse.getX(), Mouse.getY(), this);
+			//double[] veinsHeldAt = RayUtil.getRaySphereIntersection(Mouse.getX(), Mouse.getY(), this, xRayProjectionModule.activeCamera.getRotation(), xRayProjectionModule.activeCamera.getPosition(), xRayProjectionModule.modelTransform.getPosition());
+			double[] veinsHeldAt = RayUtil.getRaySphereIntersection(Mouse.getX(), Mouse.getY(), this, new org.lwjgl.util.vector.Quaternion(), new Vector3f(-xRayProjectionModule.activeCamera.getPosition().x, -xRayProjectionModule.activeCamera.getPosition().y, -xRayProjectionModule.activeCamera.getPosition().z) , new Vector3f(0, 0, 0), getVeinsModel().veinsGrabRadius * xRayProjectionModule.viewCamera.getScale().x, xRayProjectionModule);
+			System.out.println("Cam pos: " + xRayProjectionModule.activeCamera.getPosition());
 			if (veinsHeldAt != null) {
 				double[] rotationAxis;
 				double angle = 0;
@@ -599,8 +607,8 @@ public class VeinsRenderer extends VeinsRendererInterface{
 					angle = Math.acos(Vector.dotProduct(lastHeldAt, veinsHeldAt) / (Vector.length(lastHeldAt) * Vector.length(veinsHeldAt)));
 					lastHeldAt = veinsHeldAt;
 				}else{
-					rotationAxis = Vector.crossProduct(getVeinsModel().veinsGrabbedAt, veinsHeldAt);
-					lastHeldAt = getVeinsModel().veinsGrabbedAt;
+					rotationAxis = Vector.crossProduct(veinsHeldAt, veinsHeldAt);
+					lastHeldAt = veinsHeldAt;
 				}
 				if (Vector.length(rotationAxis) > 0) {
 					Vector3f rotation = new Vector3f((float)rotationAxis[0], (float)rotationAxis[1], (float)rotationAxis[2]);
@@ -614,6 +622,9 @@ public class VeinsRenderer extends VeinsRendererInterface{
 						
 					}
 				}
+			}
+			else{
+				lastHeldAt = null;
 			}
 		}else{
 			lastHeldAt = null;

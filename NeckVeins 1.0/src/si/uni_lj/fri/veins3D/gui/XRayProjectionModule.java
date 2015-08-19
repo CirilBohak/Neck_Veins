@@ -57,7 +57,7 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 	public Camera 	projectionCamera,	//Make private + getters/setters
 				  	viewCamera;
 	
-	private Camera activeCamera;
+	public Camera activeCamera;
 	
 	private VertexArrayObject model,
 							  screen;
@@ -79,7 +79,7 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 	private ElementBuffer 	screenElementBuffer,
 							modelElementBuffer;
 	
-	private VeinsModel veinsModel;
+	public VeinsModel veinsModel;
 	
 	public boolean getLockProjection(){
 		return lockProjection;
@@ -344,12 +344,12 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 				GL11.glDrawElements(GL11.GL_TRIANGLES, screen.getCount(), screen.getType(), 0);
 				screen.unbind();
 			}
-			System.out.println();
-			System.out.println("Screen transform " + screenTransform.getPosition() + " " + screenTransform.getRotation());
-			System.out.println("Model transform " + modelTransform.getPosition() + " " + modelTransform.getRotation());
-			System.out.println("Projection camera transform " + projectionCamera.getPosition() + " " + projectionCamera.getRotation());
-			System.out.println("View camera transform " + viewCamera.getPosition() + " " + viewCamera.getRotation());
-			Utility.printGLError();
+			//System.out.println();
+			//System.out.println("Screen transform " + screenTransform.getPosition() + " " + screenTransform.getRotation());
+			//System.out.println("Model transform " + modelTransform.getPosition() + " " + modelTransform.getRotation());
+			//System.out.println("Projection camera transform " + projectionCamera.getPosition() + " " + projectionCamera.getRotation());
+			//System.out.println("View camera transform " + viewCamera.getPosition() + " " + viewCamera.getRotation());
+			//Utility.printGLError();
 			GL20.glUseProgram(0);
 		}
 	}
@@ -446,7 +446,7 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 		screenTransform.setScale(new Vector3f(1, 1, 1));
 		projectionCamera.setScale(new Vector3f(1, 1, 1));
 		projectionCamera.setRotation(Transform.quatFromEuler(new Vector3f((float)Math.PI/2.f, 0, 0)));
-		projectionCamera.setPosition(new Vector3f(0, 0, 0));
+		projectionCamera.setPosition(new Vector3f(0, 0, 100));
 	}
 
 	@Override
@@ -478,7 +478,6 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 		model.setType(GL11.GL_UNSIGNED_INT);
 
 		modelTransform.setPosition(new Vector3f((float)-veinsModel.centerx, (float)-veinsModel.centery, (float)-veinsModel.centerz));
-		
 		//projectionCamera.translate(projectionCamera.getPosition().negate(null));
 		//projectionCamera.translate(new Vector3f((float)veinsModel.centerx, (float)veinsModel.centery, (float)veinsModel.centerz));
 		//modelTransform.rotate(new Vector3f((float)Math.PI/2f, 0, 0));
