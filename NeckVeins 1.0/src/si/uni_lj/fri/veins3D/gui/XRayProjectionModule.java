@@ -17,6 +17,7 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
+import org.lwjgl.util.vector.Vector2f;
 import org.lwjgl.util.vector.Vector3f;
 import org.newdawn.slick.opengl.GLUtils;
 
@@ -109,14 +110,14 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 		screenTransform = new Transform();
 		modelTransform = new Transform();
 		
-		viewCamera = new PerspectiveCamera();
-		viewCamera = new OrthoCamera(-200, 200, -200, 200, -200, 200);
+		//viewCamera = new PerspectiveCamera();
+		float ratio = (float)VeinsWindow.settings.resWidth/(float)VeinsWindow.settings.resHeight;
+		viewCamera = new OrthoCamera(-200*ratio, 200*ratio, -200, 200, -200, 200);
 		viewCamera.translate(new Vector3f(0, 0, 100));
 		
 		//projectionCamera = new OrthoCamera(-100, 100, -100, 100, -100, 100);
 		//projectionCamera = new PerspectiveCamera(viewCamera);
-		projectionCamera = new OrthoCamera(viewCamera);
-		((OrthoCamera)projectionCamera).setOrtho(-200, 200, -200, 200, -200, 200);
+		projectionCamera = new OrthoCamera((OrthoCamera)viewCamera);
 		activeCamera = viewCamera;
 		//model = new VertexArrayObject();
 		//TODO: this needs to adapt to screen resolution
@@ -422,6 +423,10 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 		} catch (GLFramebufferException e) {
 			e.printStackTrace();
 		}
+
+		float ratio = (float)VeinsWindow.settings.resWidth/(float)VeinsWindow.settings.resHeight;
+		((OrthoCamera)viewCamera).setOrtho(-200*ratio, 200*ratio, -200, 200, -200, 200);
+		//((OrthoCamera)projectionCamera).setOrtho(-200*ratio, 200*ratio, -200, 200, -200, 200);
 	}
 
 	@Override
@@ -502,6 +507,12 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 		}
 		projectionTexture = XRayProjectionModule.getTexture(filename);
 		System.out.println("New texture! " + projectionTexture.getTextureID() + " " + filename);
+		GL11.glBindTexture(GL11.GL_TEXTURE_2D, projectionTexture.getTextureID());
+		float width = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_WIDTH);
+		float height = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_HEIGHT);
+		float ratio = width/height;
+		((OrthoCamera)projectionCamera).setOrtho(-200*ratio, 200*ratio, -200, 200, -200, 200);
+		
 		Utility.printGLError();
 	}
 }
