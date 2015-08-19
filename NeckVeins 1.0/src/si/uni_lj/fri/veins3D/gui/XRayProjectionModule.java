@@ -12,16 +12,19 @@ import javax.imageio.ImageIO;
 
 import org.lwjgl.BufferUtils;
 import org.lwjgl.LWJGLException;
+import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.util.vector.Vector3f;
+import org.newdawn.slick.opengl.GLUtils;
 
 import si.uni_lj.fri.veins3D.gui.render.models.Mesh;
 import si.uni_lj.fri.veins3D.gui.render.models.VeinsModel;
 import si.uni_lj.fri.veins3D.utils.Tools;
 import si.uni_lj.fri.veins3D.gui.render.VeinsRendererInterface;
+import si.uni_lj.fri.veins3D.math.Quaternion;
 
 import com.tpxl.GL.ArrayBuffer;
 import com.tpxl.GL.Camera;
@@ -44,10 +47,12 @@ import com.tpxl.GL.exception.GLShaderCompileException;
 public class XRayProjectionModule extends VeinsRendererInterface{
 	private static final String resourceLocation = "res//";
 	
-	private boolean showWireframe,
+	public boolean showWireframe,
 					dirtyProjectionCamera,
 					dirtyViewCamera,
 					showScreen;
+	private boolean lockProjection;
+	
 	private float screenTransparency;
 	public Camera 	projectionCamera,	//Make private + getters/setters
 				  	viewCamera;
@@ -76,18 +81,24 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 	
 	private VeinsModel veinsModel;
 	
+	public boolean getLockProjection(){
+		return lockProjection;
+	}
+	
 	public void flipCamera()
 	{
 		if(activeCamera == viewCamera)
 			activeCamera = projectionCamera;
 		else
 			activeCamera = viewCamera;
+		lockProjection = !lockProjection;
 	}
 	
-	XRayProjectionModule() throws FileNotFoundException, IOException, GLShaderCompileException, GLProgramLinkException, GLFramebufferException, LWJGLException
+	public XRayProjectionModule() throws FileNotFoundException, IOException, GLShaderCompileException, GLProgramLinkException, GLFramebufferException, LWJGLException
 	{
 		super();
 		
+		lockProjection = true;
 		showWireframe = false;
 		dirtyProjectionCamera = true;
 		dirtyViewCamera = true;
@@ -98,7 +109,7 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 		screenTransform = new Transform();
 		modelTransform = new Transform();
 		
-		//viewCamera = new PerspectiveCamera();
+		viewCamera = new PerspectiveCamera();
 		viewCamera = new OrthoCamera(-200, 200, -200, 200, -200, 200);
 		viewCamera.translate(new Vector3f(0, 0, 100));
 		
@@ -106,13 +117,16 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 		//projectionCamera = new PerspectiveCamera(viewCamera);
 		projectionCamera = new OrthoCamera(viewCamera);
 		((OrthoCamera)projectionCamera).setOrtho(-200, 200, -200, 200, -200, 200);
-		
 		activeCamera = viewCamera;
 		//model = new VertexArrayObject();
-		depthBuffer = Framebuffer.getDepthFramebuffer(1366, 768);
+		//TODO: this needs to adapt to screen resolution
+		depthBuffer = Framebuffer.getDepthFramebuffer(VeinsWindow.settings.resWidth, VeinsWindow.settings.resHeight);
+		//depthBuffer = Framebuffer.getDepthFramebuffer(1920, 1080);
 
 		
-		projectionTexture = XRayProjectionModule.getTexture(resourceLocation + "imgs//Pat12_2D_DSA_AP.jpg");
+		//projectionTexture = XRayProjectionModule.getTexture(resourceLocation + "imgs//Pat12_2D_DSA_AP.jpg");
+		loadProjectionTexture(resourceLocation + "imgs//Pat12_2D_DSA_AP.jpg");
+		
 		//projectionTexture = XRayProjectionModule.getTexture("resources//tex.bmp");
 		floatBuffer = BufferUtils.createFloatBuffer(16);
 		
@@ -260,6 +274,7 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 	
 	public void tick()
 	{
+		GL11.glEnable(GL11.GL_DEPTH_TEST);
 		GL11.glEnable(GL11.GL_BLEND);
 		GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
 		dirtyProjectionCamera = true;
@@ -286,6 +301,7 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 		}
 		if(dirtyViewCamera)
 		{
+			
 			dirtyViewCamera = false;
 			GL11.glClear(GL11.GL_DEPTH_BUFFER_BIT | GL11.GL_COLOR_BUFFER_BIT);
 			
@@ -328,6 +344,12 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 				GL11.glDrawElements(GL11.GL_TRIANGLES, screen.getCount(), screen.getType(), 0);
 				screen.unbind();
 			}
+			System.out.println();
+			System.out.println("Screen transform " + screenTransform.getPosition() + " " + screenTransform.getRotation());
+			System.out.println("Model transform " + modelTransform.getPosition() + " " + modelTransform.getRotation());
+			System.out.println("Projection camera transform " + projectionCamera.getPosition() + " " + projectionCamera.getRotation());
+			System.out.println("View camera transform " + viewCamera.getPosition() + " " + viewCamera.getRotation());
+			Utility.printGLError();
 			GL20.glUseProgram(0);
 		}
 	}
@@ -363,16 +385,21 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 		tick();
 	}
 
+	private boolean lPressed;
+	
 	@Override
 	public void handleKeyboardInputPresses() {
 		// TODO Auto-generated method stub
-		
+		/*if(Keyboard.isKeyDown(Keyboard.KEY_L) && lPressed == false){
+			lPressed = true;
+			lockProjection = !lockProjection;
+		}else if(!Keyboard.isKeyDown(Keyboard.KEY_L)){
+			lPressed = false;
+		}*/
 	}
 
 	@Override
 	public void handleKeyboardInputContinuous() {
-		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
@@ -388,6 +415,13 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 		GL11.glClearColor(0.5f, 0.5f, 0.5f, 1);
 		GL11.glEnable(GL11.GL_BLEND);
 		GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+		
+		try {
+			depthBuffer.delete();
+			depthBuffer = Framebuffer.getDepthFramebuffer(VeinsWindow.settings.resWidth, VeinsWindow.settings.resHeight);
+		} catch (GLFramebufferException e) {
+			e.printStackTrace();
+		}
 	}
 
 	@Override
@@ -399,12 +433,27 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 	public void loadShaders() throws IOException {
 		
 	}
+	
+	public void resetScene(){
+		modelTransform.setPosition(new Vector3f((float)-veinsModel.centerx, (float)-veinsModel.centery, (float)-veinsModel.centerz));
+		modelTransform.setRotation(new org.lwjgl.util.vector.Quaternion());
+		modelTransform.setScale(new Vector3f(1, 1, 1));
+		viewCamera.setRotation(Transform.quatFromEuler(new Vector3f((float)Math.PI/2.f, 0, (float)Math.PI)));
+		viewCamera.setPosition(new Vector3f(0, 0, 100));
+		viewCamera.setScale(new Vector3f(1, 1, 1));
+		screenTransform.setRotation(Transform.quatFromEuler(new Vector3f((float)Math.PI/2.f, 0, 0)));
+		screenTransform.setPosition(new Vector3f(0, 0, 0));
+		screenTransform.setScale(new Vector3f(1, 1, 1));
+		projectionCamera.setScale(new Vector3f(1, 1, 1));
+		projectionCamera.setRotation(Transform.quatFromEuler(new Vector3f((float)Math.PI/2.f, 0, 0)));
+		projectionCamera.setPosition(new Vector3f(0, 0, 0));
+	}
 
 	@Override
 	public void setVeinsModel(VeinsModel veinsModel) {
 		dirtyProjectionCamera = true;
 		dirtyViewCamera = true;
-		
+		this.veinsModel = veinsModel;
 		Mesh m = veinsModel.getMeshes().get(0);
 		FloatBuffer tmpFloatBuffer = Tools.arrayListToBuffer(m.getVertices(), null);
 		modelVertexBuffer.setData(tmpFloatBuffer);
@@ -428,9 +477,32 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 		model.setCount(m.getFaces().size());
 		model.setType(GL11.GL_UNSIGNED_INT);
 
-		modelTransform.translate(new Vector3f((float)-veinsModel.centerx, (float)-veinsModel.centery, (float)-veinsModel.centerz));
+		modelTransform.setPosition(new Vector3f((float)-veinsModel.centerx, (float)-veinsModel.centery, (float)-veinsModel.centerz));
+		
+		//projectionCamera.translate(projectionCamera.getPosition().negate(null));
+		//projectionCamera.translate(new Vector3f((float)veinsModel.centerx, (float)veinsModel.centery, (float)veinsModel.centerz));
+		//modelTransform.rotate(new Vector3f((float)Math.PI/2f, 0, 0));
+		
+		viewCamera.setRotation(Transform.quatFromEuler(new Vector3f((float)Math.PI/2.f, 0, (float)Math.PI)));
+		screenTransform.setRotation(Transform.quatFromEuler(new Vector3f((float)Math.PI/2.f, 0, 0)));
+		projectionCamera.setRotation(Transform.quatFromEuler(new Vector3f((float)Math.PI/2.f, 0, 0)));
+		//rotateViewCamera(Transform.eulerFromQuat(viewCamera.getRotation()));
+		//rotateViewCamera(new Vector3f((float)-Math.PI/2f, 0, 0));
+		//rotateProjectionCamera(Transform.eulerFromQuat(projectionCamera.getRotation()));
+		
 		Utility.printGLError();
 		System.out.println("Model has " + m.getFaces().size() + " faces");
-		
+	}
+	
+	void loadProjectionTexture(String filename){
+		Utility.printGLError();
+		if(projectionTexture != null)
+		{
+			System.out.println("Deleting tex " + projectionTexture.getTextureID());
+			projectionTexture.delete();
+		}
+		projectionTexture = XRayProjectionModule.getTexture(filename);
+		System.out.println("New texture! " + projectionTexture.getTextureID() + " " + filename);
+		Utility.printGLError();
 	}
 }

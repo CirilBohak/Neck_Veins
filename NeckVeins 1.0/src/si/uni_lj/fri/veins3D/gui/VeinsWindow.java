@@ -171,8 +171,8 @@ public class VeinsWindow extends Container {
 			hud = new HUD();
 			renderers = new ArrayList<VeinsRendererInterface>();
 			renderers.add(new VeinsRenderer());
-			renderers.add(new XRayProjectionModule());
-			currentRenderer = renderers.get(1);
+			//renderers.add(new XRayProjectionModule());
+			currentRenderer = renderers.get(0);
 			frame = new VeinsFrame(this);
 			gui = new GUI(frame, currentRenderer);
 			add(gui);
@@ -183,21 +183,6 @@ public class VeinsWindow extends Container {
 		} catch (LWJGLException e) {
 			e.printStackTrace();
 			exitProgram(1);
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (GLShaderCompileException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (GLProgramLinkException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (GLFramebufferException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		}
 	}
 
@@ -334,8 +319,6 @@ public class VeinsWindow extends Container {
 			calculateClickedOn();
 		}*/
 		currentRenderer.handleMouseInput(dx, dy, dz, hud, this);
-
-
 	}
 
 	private void poll3DMouseInput() {
