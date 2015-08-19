@@ -50,8 +50,9 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 	public boolean showWireframe,
 					dirtyProjectionCamera,
 					dirtyViewCamera,
-					showScreen,
-					lockProjection;
+					showScreen;
+	private boolean lockProjection;
+	
 	private float screenTransparency;
 	public Camera 	projectionCamera,	//Make private + getters/setters
 				  	viewCamera;
@@ -80,12 +81,17 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 	
 	private VeinsModel veinsModel;
 	
+	public boolean getLockProjection(){
+		return lockProjection;
+	}
+	
 	public void flipCamera()
 	{
 		if(activeCamera == viewCamera)
 			activeCamera = projectionCamera;
 		else
 			activeCamera = viewCamera;
+		lockProjection = !lockProjection;
 	}
 	
 	public XRayProjectionModule() throws FileNotFoundException, IOException, GLShaderCompileException, GLProgramLinkException, GLFramebufferException, LWJGLException
@@ -114,11 +120,13 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 		activeCamera = viewCamera;
 		//model = new VertexArrayObject();
 		//TODO: this needs to adapt to screen resolution
-		depthBuffer = Framebuffer.getDepthFramebuffer(1024, 768);
+		depthBuffer = Framebuffer.getDepthFramebuffer(VeinsWindow.settings.resWidth, VeinsWindow.settings.resHeight);
 		//depthBuffer = Framebuffer.getDepthFramebuffer(1920, 1080);
 
 		
-		projectionTexture = XRayProjectionModule.getTexture(resourceLocation + "imgs//Pat12_2D_DSA_AP.jpg");
+		//projectionTexture = XRayProjectionModule.getTexture(resourceLocation + "imgs//Pat12_2D_DSA_AP.jpg");
+		loadProjectionTexture(resourceLocation + "imgs//Pat12_2D_DSA_AP.jpg");
+		
 		//projectionTexture = XRayProjectionModule.getTexture("resources//tex.bmp");
 		floatBuffer = BufferUtils.createFloatBuffer(16);
 		
@@ -382,12 +390,12 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 	@Override
 	public void handleKeyboardInputPresses() {
 		// TODO Auto-generated method stub
-		if(Keyboard.isKeyDown(Keyboard.KEY_L) && lPressed == false){
+		/*if(Keyboard.isKeyDown(Keyboard.KEY_L) && lPressed == false){
 			lPressed = true;
 			lockProjection = !lockProjection;
 		}else if(!Keyboard.isKeyDown(Keyboard.KEY_L)){
 			lPressed = false;
-		}
+		}*/
 	}
 
 	@Override
@@ -407,6 +415,13 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 		GL11.glClearColor(0.5f, 0.5f, 0.5f, 1);
 		GL11.glEnable(GL11.GL_BLEND);
 		GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+		
+		try {
+			depthBuffer.delete();
+			depthBuffer = Framebuffer.getDepthFramebuffer(VeinsWindow.settings.resWidth, VeinsWindow.settings.resHeight);
+		} catch (GLFramebufferException e) {
+			e.printStackTrace();
+		}
 	}
 
 	@Override
@@ -422,10 +437,14 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 	public void resetScene(){
 		modelTransform.setPosition(new Vector3f((float)-veinsModel.centerx, (float)-veinsModel.centery, (float)-veinsModel.centerz));
 		modelTransform.setRotation(new org.lwjgl.util.vector.Quaternion());
+		modelTransform.setScale(new Vector3f(1, 1, 1));
 		viewCamera.setRotation(Transform.quatFromEuler(new Vector3f((float)Math.PI/2.f, 0, (float)Math.PI)));
 		viewCamera.setPosition(new Vector3f(0, 0, 100));
+		viewCamera.setScale(new Vector3f(1, 1, 1));
 		screenTransform.setRotation(Transform.quatFromEuler(new Vector3f((float)Math.PI/2.f, 0, 0)));
 		screenTransform.setPosition(new Vector3f(0, 0, 0));
+		screenTransform.setScale(new Vector3f(1, 1, 1));
+		projectionCamera.setScale(new Vector3f(1, 1, 1));
 		projectionCamera.setRotation(Transform.quatFromEuler(new Vector3f((float)Math.PI/2.f, 0, 0)));
 		projectionCamera.setPosition(new Vector3f(0, 0, 0));
 	}
@@ -473,6 +492,17 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 		
 		Utility.printGLError();
 		System.out.println("Model has " + m.getFaces().size() + " faces");
-		
+	}
+	
+	void loadProjectionTexture(String filename){
+		Utility.printGLError();
+		if(projectionTexture != null)
+		{
+			System.out.println("Deleting tex " + projectionTexture.getTextureID());
+			projectionTexture.delete();
+		}
+		projectionTexture = XRayProjectionModule.getTexture(filename);
+		System.out.println("New texture! " + projectionTexture.getTextureID() + " " + filename);
+		Utility.printGLError();
 	}
 }

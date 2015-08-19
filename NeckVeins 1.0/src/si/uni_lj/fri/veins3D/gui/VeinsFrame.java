@@ -7,6 +7,7 @@ import org.lwjgl.LWJGLException;
 import org.lwjgl.opencl.OpenCLException;
 import org.lwjgl.opengl.Display;
 import org.lwjgl.opengl.DisplayMode;
+import org.lwjgl.util.glu.Project;
 
 import si.uni_lj.fri.veins3D.gui.render.VeinsRenderer;
 import si.uni_lj.fri.veins3D.gui.render.VeinsRendererInterface;
@@ -266,10 +267,14 @@ public class VeinsFrame extends Widget {
 				openMhd(file);
 				VeinsRenderer renderer = (VeinsRenderer) VeinsFrame.this.getGUI().getRenderer();
 				thresholdScrollbar.setValue((int) (renderer.getVeinsModel().threshold * 100));
-			} else {
+			} else if(fileExtensionEquals(file, "obj")){
 				showThresholdOptions(false);
 				openObj(file);
+			} else if(fileExtensionEquals(file, "jpg") || fileExtensionEquals(file, "png")){
+				veinsWindow.renderers.stream().filter(r->r instanceof VeinsRenderer).forEach((VeinsRendererInterface r)->{((VeinsRenderer)r).xRayProjectionModule.loadProjectionTexture(file.getAbsolutePath());});
+			
 			}
+			
 		} catch (LWJGLException | OpenCLException e) {
 			e.printStackTrace();
 			handleLWJGLException(true);
