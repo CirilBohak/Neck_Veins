@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+import java.util.ArrayList;
 
 import javax.imageio.ImageIO;
 
@@ -17,6 +18,7 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
+import org.lwjgl.util.vector.Matrix4f;
 import org.lwjgl.util.vector.Vector2f;
 import org.lwjgl.util.vector.Vector3f;
 import org.newdawn.slick.opengl.GLUtils;
@@ -147,41 +149,34 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 		screenElementBuffer = new ElementBuffer(GL15.GL_STATIC_DRAW);
 
 		Mesh m = veinsModel.getMeshes().get(0);
-		m.getVertices().forEach(System.out::println);
-		FloatBuffer tmpFloatBuffer = Tools.arrayListToBuffer(m.getVertices(), null);
-		System.out.println("pos: " + tmpFloatBuffer.position());
-		for(int i=0; i < tmpFloatBuffer.limit(); i+=3)
-		{
-			System.out.println(tmpFloatBuffer.get(i) + " " + tmpFloatBuffer.get(i+1) + " " + tmpFloatBuffer.get(i+2));
-		}
+		//FloatBuffer tmpFloatBuffer = Tools.arrayListToBuffer(m.getVertices(), null);
+		FloatBuffer tmpFloatBuffer = BufferUtils.createFloatBuffer(12);
+		tmpFloatBuffer.put(new float[]{-1, -1, 0, 1, -1, 0, -1, 1, 0, 1, 1, 0});
+		tmpFloatBuffer.rewind();
 		screenVertexBuffer.setData(tmpFloatBuffer);
 		tmpFloatBuffer.clear();
-		tmpFloatBuffer.put(Mesh.getNormals(m.getVertices(), m.getFaces()));
+		//tmpFloatBuffer.put(Mesh.getNormals(m.getVertices(), m.getFaces()));
+		tmpFloatBuffer.put(new float[]{1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0});
 		tmpFloatBuffer.rewind();
-		System.out.println("pos: " + tmpFloatBuffer.position());
-		for(int i=0; i < tmpFloatBuffer.limit(); i+=3)
-		{
-			System.out.println(tmpFloatBuffer.get(i) + " " + tmpFloatBuffer.get(i+1) + " " + tmpFloatBuffer.get(i+2));
-		}
 		screenNormalBuffer.setData(tmpFloatBuffer);
+		tmpFloatBuffer.clear();
+		tmpFloatBuffer.put(new float[]{0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0});
+		tmpFloatBuffer.rewind();
+		screenUVBuffer.setData(tmpFloatBuffer);
+		//IntBuffer tmpIBuffer = BufferUtils.createIntBuffer(m.getFaces().size());
+		//m.getFaces().forEach((Integer i)->{tmpIBuffer.put(i-1);});
+		//tmpIBuffer.rewind();
 		
-		
-		IntBuffer tmpIBuffer = BufferUtils.createIntBuffer(m.getFaces().size());
-		m.getFaces().forEach((Integer i)->{tmpIBuffer.put(i-1);});
+		IntBuffer tmpIBuffer = BufferUtils.createIntBuffer(6);
+		tmpIBuffer.put(new int[]{0, 1, 3, 0, 3, 2});
 		tmpIBuffer.rewind();
-		
-		System.out.println("pos: " + tmpIBuffer.position());
-		for(int i=0; i < tmpIBuffer.limit(); i+=3)
-		{
-			System.out.println(tmpIBuffer.get(i) + " " + tmpIBuffer.get(i+1) + " " + tmpIBuffer.get(i+2));
-		}
-		
 		screenElementBuffer.setData(tmpIBuffer);
 		
 		screen.bind();
 		screen.setElementBuffer(screenElementBuffer);
 		screen.enableVertexAttrib(screenVertexBuffer, 0, 3, GL11.GL_FLOAT, false, 0, 0);
 		screen.enableVertexAttrib(screenNormalBuffer, 1, 3, GL11.GL_FLOAT, false, 0, 0);
+		screen.enableVertexAttrib(screenUVBuffer, 2, 3, GL11.GL_FLOAT, false, 0, 0);
 		screen.setCount(m.getFaces().size());
 		screen.setType(GL11.GL_UNSIGNED_INT);
 		screen.unbind();
@@ -336,7 +331,9 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 				GL20.glUseProgram(programTextureProject.getProgramID());
 				screen.bind();
 				programTextureProject.setUniform1f("transparency", screenTransparency);
+				screenTransform.getPosition().scale(screenTransform.getScale().z);
 				programTextureProject.setUniformMatrix4f("M", false, screenTransform.viewToFloatBuffer(floatBuffer));
+				screenTransform.getPosition().scale(1f/screenTransform.getScale().z);
 				programTextureProject.setUniformMatrix4f("V_camera", false, activeCamera.viewToFloatBuffer(floatBuffer));
 				programTextureProject.setUniformMatrix4f("P_camera", false, activeCamera.projectionToFloatBuffer(floatBuffer));
 				programTextureProject.setUniformMatrix4f("V_projector", false, projectionCamera.viewToFloatBuffer(floatBuffer));
@@ -425,8 +422,9 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 		}
 
 		float ratio = (float)VeinsWindow.settings.resWidth/(float)VeinsWindow.settings.resHeight;
+		System.out.println("Ratio: " + ratio);
 		((OrthoCamera)viewCamera).setOrtho(-200*ratio, 200*ratio, -200, 200, -200, 200);
-		//((OrthoCamera)projectionCamera).setOrtho(-200*ratio, 200*ratio, -200, 200, -200, 200);
+		((OrthoCamera)projectionCamera).setOrtho(-200*ratio, 200*ratio, -200, 200, -200, 200);
 	}
 
 	@Override
@@ -448,7 +446,10 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 		viewCamera.setScale(new Vector3f(1, 1, 1));
 		screenTransform.setRotation(Transform.quatFromEuler(new Vector3f((float)Math.PI/2.f, 0, 0)));
 		screenTransform.setPosition(new Vector3f(0, 0, 0));
-		screenTransform.setScale(new Vector3f(1, 1, 1));
+		Vector3f sc = screenTransform.getScale();
+		sc.x = sc.x/sc.z;
+		sc.y = sc.y/sc.z;
+		sc.z = 1;
 		projectionCamera.setScale(new Vector3f(1, 1, 1));
 		projectionCamera.setRotation(Transform.quatFromEuler(new Vector3f((float)Math.PI/2.f, 0, 0)));
 		projectionCamera.setPosition(new Vector3f(0, 0, 100));
@@ -510,9 +511,21 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 		GL11.glBindTexture(GL11.GL_TEXTURE_2D, projectionTexture.getTextureID());
 		float width = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_WIDTH);
 		float height = GL11.glGetTexLevelParameteri(GL11.GL_TEXTURE_2D, 0, GL11.GL_TEXTURE_HEIGHT);
-		float ratio = width/height;
-		((OrthoCamera)projectionCamera).setOrtho(-200*ratio, 200*ratio, -200, 200, -200, 200);
 		
+		float maxWidth = (((OrthoCamera)projectionCamera).getRight()-((OrthoCamera)projectionCamera).getLeft())/2;
+		float maxHeight = (((OrthoCamera)projectionCamera).getTop()-((OrthoCamera)projectionCamera).getBottom())/2;
+
+		Vector3f sc = screenTransform.getScale();
+		System.out.println("Transforming screen " + width + " " + height + " " + maxWidth + " " + maxHeight);
+		if(width/height < maxWidth/maxHeight){
+			sc.y = sc.z * maxHeight;
+			sc.x = sc.z * width * maxHeight/height;	
+		}else{
+			sc.x = sc.z * maxWidth;
+			sc.y = sc.z * height* maxWidth/width;	
+		}
+		System.out.println("New size: " + sc.x/sc.z + " " + sc.y/sc.z + " (" + sc.z + ")");
+		//((OrthoCamera)projectionCamera).setOrtho(-200*ratio, 200*ratio, -200, 200, -200, 200);
 		Utility.printGLError();
 	}
 }
