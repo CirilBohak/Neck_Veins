@@ -621,7 +621,7 @@ public class VeinsRenderer extends VeinsRendererInterface{
 				veinsWindow.getClickedOn() != VeinsWindow.CLICKED_ON_ROTATION_ELLIPSE){
 			/*xRayProjectionModule vvvv*/
 			//double[] veinsHeldAt = RayUtil.getRaySphereIntersection(Mouse.getX(), Mouse.getY(), this, xRayProjectionModule.activeCamera.getRotation(), xRayProjectionModule.activeCamera.getPosition(), xRayProjectionModule.modelTransform.getPosition());
-			double[] veinsHeldAt = RayUtil.getRaySphereIntersection(Mouse.getX(), Mouse.getY(), this, new org.lwjgl.util.vector.Quaternion(), new Vector3f(-xRayProjectionModule.activeCamera.getPosition().x, -xRayProjectionModule.activeCamera.getPosition().y, -100) , new Vector3f(0, 0, 0), getVeinsModel().veinsGrabRadius * xRayProjectionModule.activeCamera.getScale().z, xRayProjectionModule);
+			double[] veinsHeldAt = RayUtil.getRaySphereIntersection(Mouse.getX(), Mouse.getY(), this, new org.lwjgl.util.vector.Quaternion(), new Vector3f(-xRayProjectionModule.activeCamera.getPosition().x, -xRayProjectionModule.activeCamera.getPosition().y, -xRayProjectionModule.activeCamera.getPosition().z) , new Vector3f(0, 0, 0), getVeinsModel().veinsGrabRadius * xRayProjectionModule.activeCamera.getScale().z, xRayProjectionModule);
 			System.out.println("Cam pos: " + xRayProjectionModule.activeCamera.getPosition());
 			if (veinsHeldAt != null) {
 				double[] rotationAxis;

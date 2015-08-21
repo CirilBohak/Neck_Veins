@@ -24,14 +24,19 @@ public class RayUtil {
 	public static double[] getRaySphereIntersection(int x, int y, VeinsRenderer renderer, Quaternion orientation, Vector3f position, Vector3f modelPosition, double radius, XRayProjectionModule xRayProjectionModule) {
 		// figure out if the click on the screen intersects the circle that
 		// surrounds the veins model
-		double veinsRadius = radius;
+		double veinsRadius = radius*1.41;
 		System.out.println("Rad: " + radius);
 		// get the direction of the "ray" cast from the camera location
 		double[] d = getRayDirection(x, y, orientation, renderer, xRayProjectionModule);
 		System.out.println("d: " + d[0] + " " +d[1] + " " + d[2]);
-		d = Vector.normalize(d);
+		Vector3f pos = new Vector3f((float)d[0] - position.x, (float)d[1]-position.y, (float)d[2]-position.z);
+		
+		Matrix4f proj = xRayProjectionModule.activeCamera.getProjectionMatrix();	//Assuming ortho
+		Vector4f dir = Matrix4f.transform(proj, new Vector4f(0f, 0f, -1f, 0f), null);
+		
+		d = Vector.normalize(new double[]{dir.x, dir.y, dir.z});
 		// a vector representing the camera location
-		double[] e = new double[] { position.x , position.y, position.z};
+		double[] e = new double[] { pos.x , pos.y, pos.z};
 
 		// the location of the sphere is the zero vector
 		double[] c = new double[] { modelPosition.x, modelPosition.y, modelPosition.z};
