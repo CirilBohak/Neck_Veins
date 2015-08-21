@@ -122,9 +122,11 @@ public class VeinsRenderer extends VeinsRendererInterface{
 			e.printStackTrace();
 		} catch (GLShaderCompileException e) {
 			// TODO Auto-generated catch block
+			System.out.println(e.getInfoLog());
 			e.printStackTrace();
 		} catch (GLProgramLinkException e) {
 			// TODO Auto-generated catch block
+			System.out.println(e.getInfoLog());
 			e.printStackTrace();
 		} catch (GLFramebufferException e) {
 			// TODO Auto-generated catch block
@@ -554,24 +556,12 @@ public class VeinsRenderer extends VeinsRendererInterface{
 				xRayProjectionModule.screenTransform.rotate(eulerAngles);
 				
 				Vector3f vec = new Vector3f(xRayProjectionModule.screenTransform.getPosition());
-				//Transform.translateBy(vec, xRayProjectionModule.projectionCamera.getRotation());
 				org.lwjgl.util.vector.Quaternion q = Transform.quatFromEuler(eulerAngles);
 				Transform.rotateBy(q, xRayProjectionModule.screenTransform.getRotation().negate(null));
 				Vector3f vecold = new Vector3f(vec);
 				Transform.translateBy(vec, q);
-				System.out.println("Vec,vecold:\n" + vecold + "\n" + vec);
 				xRayProjectionModule.screenTransform.setPosition(vec);
-				//Vector3f vecold = new Vector3f(vec);
-				//Transform.translateBy(vec, q);
-				//Vector3f diff = Vector3f.sub(vecold, vec, null);
-				//Transform.translateBy(diff, xRayProjectionModule.projectionCamera.getRotation());
-				//System.out.println("Vec,vecold,diff:\n" + vec + "\n" + vecold + "\n" + diff);
-				//System.out.println("Vec len: " + vecold.length());
-				//Vector3f diff = Vector3f.sub(xRayProjectionModule.screenTransform.getPosition(), vec, null);
-				//xRayProjectionModule.screenTransform.translate(diff);
-				//Transform.translateBy(diff, xRayProjectionModule.screenTransform.getRotation().negate(null));
-				//xRayProjectionModule.screenTransform.translate(diff);
-				
+
 				//org.lwjgl.util.vector.Quaternion oq = Transform.quatFromEuler(eulerAngles);
 				//Transform.rotateBy(oq, xRayProjectionModule.screenTransform.getRotation());
 				//Transform.translateBy(offset, oq);
@@ -579,10 +569,6 @@ public class VeinsRenderer extends VeinsRendererInterface{
 				Transform.translateBy(offset, oq);
 				xRayProjectionModule.screenTransform.translate(offset);
 				
-				/*
-				System.out.println("Screen transform pos: " + xRayProjectionModule.screenTransform.getPosition());
-				System.out.println("Offset: " + offset);
-				System.out.println("Diff: " + diff);*/
 			}else{
 				xRayProjectionModule.translateViewCamera(offset);
 				xRayProjectionModule.rotateViewCamera(eulerAngles);
@@ -635,7 +621,7 @@ public class VeinsRenderer extends VeinsRendererInterface{
 				veinsWindow.getClickedOn() != VeinsWindow.CLICKED_ON_ROTATION_ELLIPSE){
 			/*xRayProjectionModule vvvv*/
 			//double[] veinsHeldAt = RayUtil.getRaySphereIntersection(Mouse.getX(), Mouse.getY(), this, xRayProjectionModule.activeCamera.getRotation(), xRayProjectionModule.activeCamera.getPosition(), xRayProjectionModule.modelTransform.getPosition());
-			double[] veinsHeldAt = RayUtil.getRaySphereIntersection(Mouse.getX(), Mouse.getY(), this, new org.lwjgl.util.vector.Quaternion(), new Vector3f(-xRayProjectionModule.activeCamera.getPosition().x, -xRayProjectionModule.activeCamera.getPosition().y, -xRayProjectionModule.activeCamera.getPosition().z) , new Vector3f(0, 0, 0), getVeinsModel().veinsGrabRadius * xRayProjectionModule.activeCamera.getScale().z, xRayProjectionModule);
+			double[] veinsHeldAt = RayUtil.getRaySphereIntersection(Mouse.getX(), Mouse.getY(), this, new org.lwjgl.util.vector.Quaternion(), new Vector3f(-xRayProjectionModule.activeCamera.getPosition().x, -xRayProjectionModule.activeCamera.getPosition().y, -100) , new Vector3f(0, 0, 0), getVeinsModel().veinsGrabRadius * xRayProjectionModule.activeCamera.getScale().z, xRayProjectionModule);
 			System.out.println("Cam pos: " + xRayProjectionModule.activeCamera.getPosition());
 			if (veinsHeldAt != null) {
 				double[] rotationAxis;

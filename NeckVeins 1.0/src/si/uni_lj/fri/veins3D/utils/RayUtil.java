@@ -25,26 +25,26 @@ public class RayUtil {
 		// figure out if the click on the screen intersects the circle that
 		// surrounds the veins model
 		double veinsRadius = radius;
-
+		System.out.println("Rad: " + radius);
 		// get the direction of the "ray" cast from the camera location
 		double[] d = getRayDirection(x, y, orientation, renderer, xRayProjectionModule);
+		System.out.println("d: " + d[0] + " " +d[1] + " " + d[2]);
+		d = Vector.normalize(d);
 		// a vector representing the camera location
 		double[] e = new double[] { position.x , position.y, position.z};
 
 		// the location of the sphere is the zero vector
 		double[] c = new double[] { modelPosition.x, modelPosition.y, modelPosition.z};
 		// partial calculations
-		System.out.println(position);
-		System.out.println(modelPosition);
 		double[] eSc = Vector.subtraction(e, c);
+		System.out.println("eSc: " + eSc[0] + " " + eSc[1] + " " + eSc[2]);
 		double dDPeSc = Vector.dotProduct(d, eSc);
-		System.out.println("eSc: " + eSc[0] + " " + eSc[1] + " " + eSc[2] + " " + dDPeSc);
-		double discriminant = dDPeSc * dDPeSc - Vector.dotProduct(d, d)
-				* (Vector.dotProduct(eSc, eSc) - veinsRadius * veinsRadius);
-
+		System.out.println("dDPeSc: " + dDPeSc);
+		System.out.println("Dot eSc " + Vector.dotProduct(eSc, eSc));
+		double discriminant = dDPeSc * dDPeSc - Vector.dotProduct(eSc, eSc) + veinsRadius * veinsRadius;
+		System.out.println("Discriminant modded: " + discriminant);
 		// in this case the mouse is not pressed near the veins sphere
 		if (discriminant < 0) {
-			System.out.println("Discriminant modded < 0");
 			return null;
 			// in this case we hold the mouse on the sphere surrounding the
 			// veins model in some way
@@ -52,9 +52,11 @@ public class RayUtil {
 			// partial calculation
 			double[] Sd = Vector.subtraction(new double[3], d);
 			// t1 and t2 are the parameter values for vor "ray" expression e+t*d
-			double t1 = (Vector.dotProduct(Sd, eSc) + Math.sqrt(discriminant)) / Vector.dotProduct(d, d);
-			double t2 = (Vector.dotProduct(Sd, eSc) - Math.sqrt(discriminant)) / Vector.dotProduct(d, d);
-
+			//double t1 = (Vector.dotProduct(Sd, eSc) + Math.sqrt(discriminant)) / Vector.dotProduct(d, d);
+			//double t2 = (Vector.dotProduct(Sd, eSc) - Math.sqrt(discriminant)) / Vector.dotProduct(d, d);
+			double t1 = -dDPeSc + Math.sqrt(discriminant);
+			double t2 = -dDPeSc - Math.sqrt(discriminant);
+			
 			if (t2 < 0)
 			{
 				double ret[] = Vector.sum(e, Vector.vScale(d, t1));
@@ -63,9 +65,9 @@ public class RayUtil {
 			}
 			else
 			{
-				double ret[] = Vector.sum(e, Vector.vScale(d, t1));
+				double ret[] = Vector.sum(e, Vector.vScale(d, t2));
 				System.out.println("Intersection modded: " + (ret[0]+position.x) + " " + (ret[1]+position.y) + " " + (ret[2]+position.z));
-				return Vector.sum(e, Vector.vScale(d, t2));
+				return ret;
 			}
 		}
 	}
@@ -117,9 +119,9 @@ public class RayUtil {
 			}
 			else
 			{
-				double ret[] = Vector.sum(e, Vector.vScale(d, t1));
+				double ret[] = Vector.sum(e, Vector.vScale(d, t2));
 				System.out.println("Intersection orig: " + ret[0] + " " + ret[1] + " " + ret[2]);
-				return Vector.sum(e, Vector.vScale(d, t2));
+				return ret;
 			}
 		}
 	}
@@ -162,6 +164,9 @@ public class RayUtil {
 		Vector4f tul = Matrix4f.transform(rot, new Vector4f(0f, 2/proj.m11, 0f, 0f), null);
 		Vector4f tll = Matrix4f.transform(rot, new Vector4f(0f, 0f, 0f, 0f), null);
 		Vector4f tlr = Matrix4f.transform(rot, new Vector4f(2/proj.m00, 0f, 0f, 0f), null);
+		//Vector4f dir = Matrix4f.transform(proj, new Vector4f(0f, 0f, -1f, 0f), null);
+		//if(true)
+		//	return new double[]{dir.x, dir.y, dir.z};
 		//double nx = ((x-VeinsWindow.settings.resWidth/2)*(2d/proj.m00))/VeinsWindow.settings.resWidth;
 		//double ny = ((y-VeinsWindow.settings.resHeight/2)*(2d/proj.m11))/VeinsWindow.settings.resHeight;
 		

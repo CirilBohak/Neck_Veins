@@ -56,7 +56,9 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 					showScreen;
 	private boolean lockProjection;
 	
-	private float screenTransparency;
+	private float 	screenOpacity,
+					screenLockedOpacity,
+					screenUnlockedOpacity;
 	public Camera 	projectionCamera,	//Make private + getters/setters
 				  	viewCamera;
 	
@@ -95,6 +97,7 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 		else
 			activeCamera = viewCamera;
 		lockProjection = !lockProjection;
+		screenOpacity = lockProjection?screenLockedOpacity:screenUnlockedOpacity;
 	}
 	
 	public XRayProjectionModule() throws FileNotFoundException, IOException, GLShaderCompileException, GLProgramLinkException, GLFramebufferException, LWJGLException
@@ -107,7 +110,9 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 		dirtyViewCamera = true;
 		showScreen = true;
 		
-		screenTransparency = 0.5f;
+		screenLockedOpacity = 0.1f;
+		screenOpacity = screenLockedOpacity;
+		screenUnlockedOpacity = 0.7f;
 		
 		screenTransform = new Transform();
 		modelTransform = new Transform();
@@ -314,7 +319,14 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 			programProject.setUniformMatrix4f("V_projector", false, projectionCamera.viewToFloatBuffer(floatBuffer));
 			programProject.setUniformMatrix4f("P_projector", false, projectionCamera.projectionToFloatBuffer(floatBuffer));
 			programProject.setUniformMatrix4f("M", false, modelTransform.viewToFloatBuffer(floatBuffer));
-
+			Vector3f scale = screenTransform.getScale();
+			float maxWidth = (((OrthoCamera)projectionCamera).getRight()-((OrthoCamera)projectionCamera).getLeft())/2;
+			float maxHeight = (((OrthoCamera)projectionCamera).getTop()-((OrthoCamera)projectionCamera).getBottom())/2;
+			programProject.setUniform1f("xRatio", scale.x/(maxWidth*scale.z));
+			programProject.setUniform1f("yRatio", scale.y/(maxHeight*scale.z));
+			//System.out.println("Scales: " + scale.x + " " + scale.y + " " + scale.z);
+			//System.out.println(maxWidth + " " + maxHeight);
+			
 			model.bind();
 			if(showWireframe)
 			{
@@ -330,7 +342,7 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 			{
 				GL20.glUseProgram(programTextureProject.getProgramID());
 				screen.bind();
-				programTextureProject.setUniform1f("transparency", screenTransparency);
+				programTextureProject.setUniform1f("transparency", screenOpacity);
 				screenTransform.getPosition().scale(screenTransform.getScale().z);
 				programTextureProject.setUniformMatrix4f("M", false, screenTransform.viewToFloatBuffer(floatBuffer));
 				screenTransform.getPosition().scale(1f/screenTransform.getScale().z);
