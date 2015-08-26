@@ -641,6 +641,13 @@ public class VeinsRenderer extends VeinsRendererInterface{
 					{
 						xRayProjectionModule.rotateProjectionCamera(rotation);
 						xRayProjectionModule.screenTransform.rotate(rotation);
+						
+						Vector3f vec = new Vector3f(xRayProjectionModule.screenTransform.getPosition());
+						org.lwjgl.util.vector.Quaternion q = Transform.quatFromEuler(rotation);
+						Transform.rotateBy(q, xRayProjectionModule.screenTransform.getRotation().negate(null));
+						Vector3f vecold = new Vector3f(vec);
+						Transform.translateBy(vec, q);
+						xRayProjectionModule.screenTransform.setPosition(vec);
 					}else{
 						xRayProjectionModule.rotateViewCamera(rotation);
 						
