@@ -133,7 +133,7 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 
 		
 		//projectionTexture = XRayProjectionModule.getTexture(resourceLocation + "imgs//Pat12_2D_DSA_AP.jpg");
-		loadProjectionTexture(resourceLocation + "imgs//Pat12_2D_DSA_AP.jpg");
+		loadProjectionTexture(resourceLocation + "imgs//empty.png");
 		
 		//projectionTexture = XRayProjectionModule.getTexture("resources//tex.bmp");
 		floatBuffer = BufferUtils.createFloatBuffer(16);
@@ -422,7 +422,7 @@ public class XRayProjectionModule extends VeinsRendererInterface{
 	@Override
 	public void setupView() {
 		GL11.glEnable(GL11.GL_DEPTH_TEST);
-		GL11.glClearColor(0.5f, 0.5f, 0.5f, 1);
+		GL11.glClearColor(0.f, 0.f, 0.f, 1);
 		GL11.glEnable(GL11.GL_BLEND);
 		GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
 		

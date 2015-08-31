@@ -650,7 +650,6 @@ public class VeinsRenderer extends VeinsRendererInterface{
 						xRayProjectionModule.screenTransform.setPosition(vec);
 					}else{
 						xRayProjectionModule.rotateViewCamera(rotation);
-						
 					}
 				}
 			}
